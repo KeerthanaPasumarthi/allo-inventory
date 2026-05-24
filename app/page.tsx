@@ -1,13 +1,15 @@
-import ReserveButton from "./ReserveButton";
+import { prisma } from "@/lib/prisma";
+
 async function getProducts() {
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/products`,
-    {
-      cache: "no-store",
-    }
-  );
-
-  return res.json();
+  return prisma.product.findMany({
+    include: {
+      inventory: {
+        include: {
+          warehouse: true,
+        },
+      },
+    },
+  });
 }
 
 export default async function Home() {
@@ -18,73 +20,67 @@ export default async function Home() {
     <main className="p-10">
 
       <h1 className="text-3xl font-bold mb-8">
-        Allo Inventory System
+        Inventory System
       </h1>
 
       <div className="grid gap-6">
 
-        {products.map((product: any) => (
+        {products.map((product) => {
 
-          <div
-            key={product.id}
-            className="border p-5 rounded-lg"
-          >
+          const inventory =
+            product.inventory[0];
 
-            <h2 className="text-2xl font-semibold">
-              {product.name}
-            </h2>
+          const available =
+            inventory.totalStock -
+            inventory.reservedStock;
 
-            <p className="mb-4">
-              {product.description}
-            </p>
+          return (
+            <div
+              key={product.id}
+              className="border p-6 rounded-lg"
+            >
 
-            {product.inventory.map((item: any) => (
+              <h2 className="text-2xl font-semibold">
+                {product.name}
+              </h2>
 
-              <div
-                key={item.id}
-                className="border-t pt-3 mt-3"
-              >
+              <p>
+                {product.description}
+              </p>
 
-                <p>
-                  Warehouse:
-                  {" "}
-                  {item.warehouse.name}
-                </p>
+              <p className="mt-2">
+                Warehouse:
+                {" "}
+                {inventory.warehouse.name}
+              </p>
 
-                <p>
-                  Location:
-                  {" "}
-                  {item.warehouse.location}
-                </p>
+              <p>
+                Location:
+                {" "}
+                {inventory.warehouse.location}
+              </p>
 
-                <p>
-                  Total Stock:
-                  {" "}
-                  {item.totalStock}
-                </p>
+              <p>
+                Total Stock:
+                {" "}
+                {inventory.totalStock}
+              </p>
 
-                <p>
-                  Reserved Stock:
-                  {" "}
-                  {item.reservedStock}
-                </p>
+              <p>
+                Reserved Stock:
+                {" "}
+                {inventory.reservedStock}
+              </p>
 
-                <p className="font-bold">
-                  Available:
-                  {" "}
-                  {item.totalStock - item.reservedStock}
-                </p>
+              <p className="font-bold">
+                Available:
+                {" "}
+                {available}
+              </p>
 
-                <ReserveButton
-  productId={product.id}
-  warehouseId={item.warehouse.id}
-/>
-
-              </div>
-            ))}
-
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
       </div>
 
